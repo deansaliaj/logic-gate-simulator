@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Interactive Logic Gate Simulator | Free Online Digital Logic Tool</title>
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="Free interactive logic gate simulator. Build and test AND, OR, NOT, NAND, NOR and XOR gate circuits in your browser. Live signal propagation, auto truth table, zoom and pan. Perfect for EEE students and electronics learners."/>
+<meta name="keywords" content="logic gate simulator, digital logic, AND gate, OR gate, NOT gate, XOR gate, NAND gate, NOR gate, truth table, circuit simulator, electronics, EEE, electrical engineering, online simulator"/>
+<meta name="author" content="Logic Gate Simulator"/>
+<meta name="robots" content="index, follow"/>
+<link rel="canonical" href="https://YOUR-USERNAME.github.io/logic-gate-simulator/"/>
+
+<!-- Open Graph (shows a nice preview when shared on LinkedIn, WhatsApp, etc.) -->
+<meta property="og:title" content="Interactive Logic Gate Simulator"/>
+<meta property="og:description" content="Build digital logic circuits in your browser. Place gates, wire them up, toggle inputs and watch the truth table generate live."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://YOUR-USERNAME.github.io/logic-gate-simulator/"/>
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Interactive Logic Gate Simulator"/>
+<meta name="twitter:description" content="Build digital logic circuits in your browser. Place gates, wire them up, toggle inputs and watch the truth table generate live."/>
+<!-- Structured Data for Google -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Interactive Logic Gate Simulator",
+  "description": "Free browser-based logic gate simulator. Build digital circuits with AND, OR, NOT, NAND, NOR and XOR gates. Features live signal propagation, automatic truth table generation, zoom and pan.",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
+  "keywords": "logic gates, digital logic, circuit simulator, truth table, electronics, EEE"
+}
+</script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a1a; padding: 1.5rem; }
+h1 { font-size: 20px; font-weight: 500; margin-bottom: 1rem; color: #1a1a1a; }
+#toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+.tbtn { padding: 6px 13px; border: 0.5px solid #ccc; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; font-size: 13px; font-weight: 500; }
+.tbtn:hover { background: #f0f0ee; }
+.tbtn.sel { background: #dceefb; color: #0c447c; border-color: #378ADD; }
+.tbtn.danger { color: #a32d2d; }
+.tbtn.delete-mode { background: #fcebeb; color: #a32d2d; border-color: #e24b4a; }
+.tbtn.pan-mode { background: #faeeda; color: #633806; border-color: #ef9f27; }
+#workspace { position: relative; width: 100%; height: 500px; border: 0.5px solid #ddd; border-radius: 12px; background: #efefed; overflow: hidden; cursor: default; }
+#workspace.panning { cursor: grabbing !important; }
+#workspace.pan-ready { cursor: grab !important; }
+#workspace.delete-cursor { cursor: not-allowed; }
+#world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.gate { position: absolute; width: 78px; height: 50px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; font-size: 13px; font-weight: 500; transition: border-color 0.1s, box-shadow 0.1s; }
+.gate.input-node  { background: #ccc; border: 1.5px solid #999; color: #333; cursor: pointer; }
+.gate.input-node.on { background: #1D9E75; border-color: #0F6E56; color: #fff; }
+.gate.output-node { background: #fff; border: 1.5px solid #378ADD; color: #1a1a1a; }
+.gate.gate-and  { background: #E6F1FB; border: 1.5px solid #378ADD; color: #0C447C; }
+.gate.gate-or   { background: #E1F5EE; border: 1.5px solid #1D9E75; color: #085041; }
+.gate.gate-not  { background: #FAEEDA; border: 1.5px solid #EF9F27; color: #633806; }
+.gate.gate-nand { background: #FAECE7; border: 1.5px solid #D85A30; color: #4A1B0C; }
+.gate.gate-nor  { background: #FBEAF0; border: 1.5px solid #D4537E; color: #4B1528; }
+.gate.gate-xor  { background: #EEEDFE; border: 1.5px solid #7F77DD; color: #26215C; }
+.gate.delete-hover { border-color: #E24B4A !important; box-shadow: 0 0 0 2px rgba(226,75,74,0.25); cursor: not-allowed !important; }
+.gate-label { font-size: 10px; opacity: 0.7; margin-top: 2px; }
+.gate.input-node.on .gate-label { color: rgba(255,255,255,0.8); }
+.port { position: absolute; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #378ADD; background: #fff; cursor: crosshair; z-index: 10; }
+.port.out { right: -7px; }
+.port.in { left: -7px; }
+.port.in.top { top: 12px; }
+.port.in.bot { bottom: 12px; }
+.port.in.mid { top: 50%; transform: translateY(-50%); }
+.port:hover { background: #378ADD; }
+svg#wires { position: absolute; top: 0; left: 0; width: 9999px; height: 9999px; pointer-events: none; overflow: visible; }
+#zoom-controls { position: absolute; bottom: 12px; right: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 100; }
+#zoom-controls button { width: 30px; height: 30px; border: 0.5px solid #ccc; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; font-size: 16px; font-weight: 500; display: flex; align-items: center; justify-content: center; }
+#zoom-controls button:hover { background: #f0f0ee; }
+#zoom-label { font-size: 11px; color: #888; text-align: center; }
+#hint { font-size: 12px; color: #888; margin-top: 8px; min-height: 18px; }
+#tt { margin-top: 12px; }
+#tt table { border-collapse: collapse; font-size: 13px; }
+#tt th, #tt td { border: 0.5px solid #ddd; padding: 4px 14px; text-align: center; }
+#tt th { background: #f0f0ee; font-weight: 500; color: #666; }
+.v1 { color: #1D9E75; font-weight: 500; }
+.v0 { color: #888; }
+.legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #666; }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>Logic Gate Simulator</h1>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#E6F1FB;border:1px solid #378ADD"></div>AND</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#E1F5EE;border:1px solid #1D9E75"></div>OR</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FAEEDA;border:1px solid #EF9F27"></div>NOT</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FAECE7;border:1px solid #D85A30"></div>NAND</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FBEAF0;border:1px solid #D4537E"></div>NOR</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#EEEDFE;border:1px solid #7F77DD"></div>XOR</div>
+</div>
+<div id="toolbar">
+  <span style="font-size:13px;color:#666;font-weight:500;">Add:</span>
+  <button class="tbtn" onclick="select('INPUT')">Input</button>
+  <button class="tbtn" onclick="select('OUTPUT')">Output</button>
+  <button class="tbtn" onclick="select('AND')">AND</button>
+  <button class="tbtn" onclick="select('OR')">OR</button>
+  <button class="tbtn" onclick="select('NOT')">NOT</button>
+  <button class="tbtn" onclick="select('NAND')">NAND</button>
+  <button class="tbtn" onclick="select('NOR')">NOR</button>
+  <button class="tbtn" onclick="select('XOR')">XOR</button>
+  <button class="tbtn" id="pan-btn" onclick="togglePanMode()">✥ Pan</button>
+  <button class="tbtn danger" id="del-btn" onclick="toggleDeleteMode()">Delete</button>
+  <button class="tbtn danger" onclick="clearAll()">Clear all</button>
+  <button class="tbtn" onclick="loadExample()">Example</button>
+</div>
+<div id="workspace">
+  <div id="world">
+    <svg id="wires"></svg>
+  </div>
+  <div id="zoom-controls">
+    <button onclick="zoomBtn(0.2)">+</button>
+    <span id="zoom-label">100%</span>
+    <button onclick="zoomBtn(-0.2)">−</button>
+    <button onclick="resetView()" title="Reset view" style="font-size:11px;">⌂</button>
+  </div>
+</div>
+<div id="hint">Select a component and click the canvas to place it. Scroll to zoom. Use Pan to drag the canvas.</div>
+<div id="tt"></div>
+
+<footer style="margin-top:2rem;padding-top:1rem;border-top:0.5px solid #ddd;font-size:12px;color:#999;line-height:1.8;">
+  <p><strong style="color:#555">How to use:</strong> Select a gate from the toolbar and click the canvas to place it. Click the blue output dot (right side) of a gate, then the input dot (left side) of another to wire them. Click Input nodes to toggle between 0 and 1. Use <strong style="color:#555">Pan mode</strong> to drag the canvas, and <strong style="color:#555">scroll</strong> to zoom.</p>
+  <p style="margin-top:8px;">Supports AND, OR, NOT, NAND, NOR and XOR gates. Auto-generates truth tables for up to 4 inputs. Built for EEE / digital electronics students.</p>
+</footer>
+
+<script>
+let selected=null,deleteMode=false,panMode=false;
+let nodes=[],wires=[];
+let nid=1,inCount=0,outCount=0;
+let wireStart=null;
+let draggingNode=null,dragOX=0,dragOY=0;
+let scale=1,panX=0,panY=0;
+let isPanning=false,panStartX=0,panStartY=0,panStartPX=0,panStartPY=0;
+
+const ws=document.getElementById('workspace');
+const world=document.getElementById('world');
+const svg=document.getElementById('wires');
+const delBtn=document.getElementById('del-btn');
+const panBtn=document.getElementById('pan-btn');
+const GATE_COLORS={AND:'gate-and',OR:'gate-or',NOT:'gate-not',NAND:'gate-nand',NOR:'gate-nor',XOR:'gate-xor'};
+
+function applyTransform(){
+  world.style.transform=`translate(${panX}px,${panY}px) scale(${scale})`;
+  document.getElementById('zoom-label').textContent=Math.round(scale*100)+'%';
+}
+function zoomBtn(delta){const r=ws.getBoundingClientRect();zoom(delta,r.width/2,r.height/2);}
+function zoom(delta,cx,cy){
+  const ns=Math.min(3,Math.max(0.2,scale+delta));
+  panX=cx-(cx-panX)*(ns/scale); panY=cy-(cy-panY)*(ns/scale); scale=ns; applyTransform();
+}
+function resetView(){scale=1;panX=0;panY=0;applyTransform();}
+
+ws.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=ws.getBoundingClientRect();
+  zoom(e.deltaY<0?0.1:-0.1,e.clientX-r.left,e.clientY-r.top);
+},{passive:false});
+
+ws.addEventListener('mousedown',e=>{
+  if(panMode||e.button===1){
+    isPanning=true; panStartX=e.clientX; panStartY=e.clientY;
+    panStartPX=panX; panStartPY=panY; ws.classList.add('panning'); e.preventDefault();
+  }
+});
+document.addEventListener('mousemove',e=>{
+  if(isPanning){panX=panStartPX+(e.clientX-panStartX);panY=panStartPY+(e.clientY-panStartY);applyTransform();return;}
+  if(draggingNode){
+    const r=ws.getBoundingClientRect();
+    draggingNode.x=(e.clientX-r.left-panX)/scale-dragOX;
+    draggingNode.y=(e.clientY-r.top-panY)/scale-dragOY;
+    const el=document.getElementById('node-'+draggingNode.id);
+    el.style.left=draggingNode.x+'px'; el.style.top=draggingNode.y+'px'; redrawWires();
+  }
+});
+document.addEventListener('mouseup',e=>{
+  if(isPanning){isPanning=false;ws.classList.remove('panning');}
+  draggingNode=null;
+});
+
+function worldPos(cx,cy){const r=ws.getBoundingClientRect();return{x:(cx-r.left-panX)/scale,y:(cy-r.top-panY)/scale};}
+
+function select(type){
+  if(deleteMode)toggleDeleteMode(); if(panMode)togglePanMode();
+  selected=type;
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
+  event.target.classList.add('sel');
+  hint('Click the canvas to place '+type+'.');
+}
+function togglePanMode(){
+  panMode=!panMode;
+  if(panMode){
+    if(deleteMode)toggleDeleteMode(); selected=null;
+    document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
+    panBtn.classList.add('pan-mode'); ws.classList.add('pan-ready'); ws.classList.remove('delete-cursor');
+    hint('Pan mode: hold and drag the canvas to move around.');
+  } else {
+    panBtn.classList.remove('pan-mode'); ws.classList.remove('pan-ready');
+    hint('Select a component and click the canvas to place it.');
+  }
+}
+function toggleDeleteMode(){
+  deleteMode=!deleteMode;
+  if(deleteMode){
+    if(panMode)togglePanMode(); selected=null;
+    document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
+    delBtn.classList.add('delete-mode'); ws.classList.add('delete-cursor');
+    hint('Delete mode: click a gate to remove it, or a wire to disconnect it.');
+  } else {
+    delBtn.classList.remove('delete-mode'); ws.classList.remove('delete-cursor');
+    hint('Select a component and click the canvas to place it.');
+  }
+}
+function hint(msg){document.getElementById('hint').textContent=msg;}
+
+ws.addEventListener('click',e=>{
+  if(panMode||isPanning||!selected)return;
+  if(e.target!==ws&&e.target!==world&&e.target!==svg)return;
+  const p=worldPos(e.clientX,e.clientY);
+  const labels='A,B,C,D,E,F,G,H'.split(',');
+  const node={id:nid++,type:selected,x:p.x-39,y:p.y-25,value:0,
+    label:selected==='INPUT'?(labels[inCount++]||'I'+inCount):selected==='OUTPUT'?'OUT'+(++outCount):''};
+  nodes.push(node); renderNode(node);
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel')); selected=null;
+  hint('Placed! Wire ports by clicking output (right dot) then input (left dot).'); redrawWires();
+});
+
+function deleteNode(node){
+  wires=wires.filter(w=>w.fromId!==node.id&&w.toId!==node.id);
+  nodes=nodes.filter(n=>n.id!==node.id);
+  const el=document.getElementById('node-'+node.id); if(el)el.remove();
+  redrawWires(); hint('Gate deleted.');
+}
+
+function renderNode(node){
+  const div=document.createElement('div');
+  div.id='node-'+node.id;
+  let cls='gate';
+  if(node.type==='INPUT') cls+=' input-node';
+  else if(node.type==='OUTPUT') cls+=' output-node';
+  else cls+=' '+(GATE_COLORS[node.type]||'');
+  div.className=cls; div.style.left=node.x+'px'; div.style.top=node.y+'px';
+  if(node.type==='INPUT'){
+    div.innerHTML=`<span class="val">0</span><span class="gate-label">${node.label}</span>`;
+    div.onclick=e=>{e.stopPropagation();if(panMode)return;if(deleteMode){deleteNode(node);return;}toggleInput(node);};
+  } else if(node.type==='OUTPUT'){
+    div.innerHTML=`<span class="val">?</span><span class="gate-label">${node.label}</span>`;
+    div.onclick=e=>{e.stopPropagation();if(panMode)return;if(deleteMode)deleteNode(node);};
+  } else {
+    div.innerHTML=`<span>${node.type}</span>`;
+    div.onclick=e=>{e.stopPropagation();if(panMode)return;if(deleteMode)deleteNode(node);};
+  }
+  div.addEventListener('mouseenter',()=>{if(deleteMode)div.classList.add('delete-hover');});
+  div.addEventListener('mouseleave',()=>div.classList.remove('delete-hover'));
+  if(node.type!=='OUTPUT'){
+    const op=document.createElement('div');
+    op.className='port out'; op.style.top='50%'; op.style.transform='translateY(-50%)';
+    op.onclick=e=>{e.stopPropagation();if(!deleteMode&&!panMode)startWire(node);};
+    div.appendChild(op);
+  }
+  const inC=node.type==='NOT'||node.type==='OUTPUT'?1:node.type==='INPUT'?0:2;
+  for(let i=0;i<inC;i++){
+    const ip=document.createElement('div');
+    ip.className='port in '+(inC===1?'mid':i===0?'top':'bot');
+    ip.onclick=e=>{e.stopPropagation();if(!deleteMode&&!panMode)endWire(node,i);};
+    div.appendChild(ip);
+  }
+  div.addEventListener('mousedown',e=>{
+    if(panMode||deleteMode||e.target.classList.contains('port')||node.type==='INPUT')return;
+    draggingNode=node;
+    const r=ws.getBoundingClientRect();
+    dragOX=(e.clientX-r.left-panX)/scale-node.x;
+    dragOY=(e.clientY-r.top-panY)/scale-node.y; e.preventDefault();
+  });
+  world.appendChild(div);
+}
+
+function startWire(node){wireStart=node;hint('Now click an input port (left dot) on another gate.');}
+function endWire(node,portIdx){
+  if(!wireStart){hint('First click an output port (right dot).');return;}
+  if(wireStart.id===node.id){wireStart=null;return;}
+  wires=wires.filter(w=>!(w.toId===node.id&&w.toPort===portIdx));
+  wires.push({fromId:wireStart.id,toId:node.id,toPort:portIdx});
+  wireStart=null; evaluate(); redrawWires(); hint('Wired! Toggle inputs by clicking them.');
+}
+
+function portPos(node,type,idx){
+  const x=node.x,y=node.y,w=78,h=50;
+  if(type==='out')return{x:x+w,y:y+h/2};
+  const inC=node.type==='NOT'||node.type==='OUTPUT'?1:2;
+  if(inC===1)return{x,y:y+h/2};
+  return{x,y:y+(idx===0?h*0.28:h*0.72)};
+}
+
+function redrawWires(){
+  const vals=evaluate();
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  wires.forEach((w,wi)=>{
+    const from=nodes.find(n=>n.id===w.fromId),to=nodes.find(n=>n.id===w.toId);
+    if(!from||!to)return;
+    const fp=portPos(from,'out',0),tp=portPos(to,'in',w.toPort);
+    const cx=(fp.x+tp.x)/2;
+    const d=`M${fp.x},${fp.y} C${cx},${fp.y} ${cx},${tp.y} ${tp.x},${tp.y}`;
+    const hit=document.createElementNS('http://www.w3.org/2000/svg','path');
+    hit.setAttribute('d',d); hit.setAttribute('stroke','transparent');
+    hit.setAttribute('stroke-width','12'); hit.setAttribute('fill','none');
+    hit.style.pointerEvents=deleteMode?'stroke':'none';
+    hit.style.cursor=deleteMode?'pointer':'default';
+    hit.addEventListener('click',()=>{if(!deleteMode)return;wires.splice(wi,1);redrawWires();hint('Wire removed.');});
+    hit.addEventListener('mouseenter',()=>{if(deleteMode)path.setAttribute('stroke','#E24B4A');});
+    hit.addEventListener('mouseleave',()=>{path.setAttribute('stroke',vals[from.id]?'#1D9E75':'#aaa');});
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',d); path.setAttribute('stroke',vals[from.id]?'#1D9E75':'#aaa');
+    path.setAttribute('stroke-width','2.5'); path.setAttribute('fill','none');
+    path.style.pointerEvents='none';
+    svg.appendChild(hit); svg.appendChild(path);
+  });
+  updateTruthTable(vals);
+}
+
+function evaluate(){
+  const vals={};
+  nodes.forEach(n=>{vals[n.id]=n.type==='INPUT'?(n.value||0):null;});
+  for(let i=0;i<20;i++){
+    nodes.forEach(n=>{
+      if(n.type==='INPUT')return;
+      const ins=wires.filter(w=>w.toId===n.id);
+      const getIn=idx=>{const w=ins.find(w=>w.toPort===idx);return w?(vals[w.fromId]??0):0;};
+      const a=getIn(0),b=getIn(1);
+      if(n.type==='OUTPUT')vals[n.id]=a;
+      else if(n.type==='AND')vals[n.id]=a&b;
+      else if(n.type==='OR')vals[n.id]=a|b;
+      else if(n.type==='NOT')vals[n.id]=a^1;
+      else if(n.type==='NAND')vals[n.id]=(a&b)^1;
+      else if(n.type==='NOR')vals[n.id]=(a|b)^1;
+      else if(n.type==='XOR')vals[n.id]=a^b;
+    });
+  }
+  nodes.forEach(n=>{
+    const el=document.getElementById('node-'+n.id);if(!el)return;
+    const vs=el.querySelector('.val');if(vs)vs.textContent=vals[n.id]??0;
+    if(n.type==='INPUT')el.classList.toggle('on',!!n.value);
+  });
+  return vals;
+}
+
+function toggleInput(node){node.value=node.value?0:1;evaluate();redrawWires();}
+
+function updateTruthTable(vals){
+  const inputs=nodes.filter(n=>n.type==='INPUT');
+  const outputs=nodes.filter(n=>n.type==='OUTPUT');
+  const tt=document.getElementById('tt');
+  if(!inputs.length||!outputs.length){tt.innerHTML='';return;}
+  if(inputs.length>4){tt.innerHTML='<p style="font-size:13px;color:#888">Add up to 4 inputs to see truth table.</p>';return;}
+  const saved=inputs.map(n=>n.value);
+  const rows=1<<inputs.length;
+  let html='<table><tr>'+inputs.map(n=>`<th>${n.label||'IN'}</th>`).join('')+outputs.map(n=>`<th>${n.label||'OUT'}</th>`).join('')+'</tr>';
+  for(let r=0;r<rows;r++){
+    inputs.forEach((n,i)=>{n.value=(r>>(inputs.length-1-i))&1;});
+    const rv=evaluate();
+    html+='<tr>'+inputs.map(n=>`<td class="${n.value?'v1':'v0'}">${n.value}</td>`).join('')+outputs.map(n=>`<td class="${rv[n.id]?'v1':'v0'}">${rv[n.id]??0}</td>`).join('')+'</tr>';
+  }
+  html+='</table>';
+  inputs.forEach((n,i)=>{n.value=saved[i];}); evaluate(); tt.innerHTML=html;
+}
+
+function clearAll(){
+  nodes=[];wires=[];wireStart=null;inCount=0;outCount=0;nid=1;selected=null;deleteMode=false;panMode=false;
+  delBtn.classList.remove('delete-mode');panBtn.classList.remove('pan-mode');
+  ws.classList.remove('delete-cursor','pan-ready');
+  document.querySelectorAll('.gate').forEach(el=>el.remove());
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  document.getElementById('tt').innerHTML='';
+  resetView(); hint('Select a component and click the canvas to place it.');
+}
+
+function loadExample(){
+  clearAll();
+  const a   ={id:nid++,type:'INPUT', x:60, y:80, value:1,label:'A'};inCount++;
+  const b   ={id:nid++,type:'INPUT', x:60, y:200,value:0,label:'B'};inCount++;
+  const andG={id:nid++,type:'AND',   x:220,y:100,value:0,label:''};
+  const orG ={id:nid++,type:'OR',    x:220,y:220,value:0,label:''};
+  const xor ={id:nid++,type:'XOR',   x:380,y:160,value:0,label:''};
+  const out ={id:nid++,type:'OUTPUT',x:530,y:175,value:0,label:'OUT1'};outCount++;
+  [a,b,andG,orG,xor,out].forEach(n=>{nodes.push(n);renderNode(n);});
+  wires=[
+    {fromId:a.id,toId:andG.id,toPort:0},{fromId:b.id,toId:andG.id,toPort:1},
+    {fromId:a.id,toId:orG.id, toPort:0},{fromId:b.id,toId:orG.id, toPort:1},
+    {fromId:andG.id,toId:xor.id,toPort:0},{fromId:orG.id,toId:xor.id,toPort:1},
+    {fromId:xor.id,toId:out.id,toPort:0},
+  ];
+  evaluate();redrawWires();
+  hint('Example loaded! Use Pan mode to drag the canvas if gates go off-screen.');
+}
+
+applyTransform();
+</script>
+</body>
+</html>
